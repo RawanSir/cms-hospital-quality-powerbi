@@ -1,11 +1,11 @@
 # US Hospital Performance & Patient Experience Dashboard
-**Power BI Portfolio Project | Rawan Al-Sir**
+**Power BI Portfolio Project | RawanSir**
 
 ---
 
 ## Project Overview
 
-This project analyses real hospital performance and patient experience data published by the **Centers for Medicare & Medicaid Services (CMS)** the US federal agency responsible for hospital quality reporting. The project demonstrates end-to-end business intelligence work: data sourcing, data modelling, DAX development, and dashboard design across two focused executive dashboards.
+This project analyses real hospital performance and patient experience data published by the **Centers for Medicare & Medicaid Services (CMS)**, the US federal agency responsible for hospital quality reporting. The project demonstrates end-to-end business intelligence work: data sourcing, data modelling, DAX development, and dashboard design across two focused executive dashboards.
 
 This dataset was chosen over synthetic alternatives specifically because every number is real, auditable, and defensible. CMS updates this data quarterly and it is used by healthcare executives, policy makers, and the public to evaluate hospital quality across the United States.
 
@@ -47,13 +47,15 @@ Dim_Hospital ─────────────── Fact_Complications
 ### Modelling Decisions
 
 **Why a star schema?**
-Dimension tables act as the filter layer, stable, unique, and standardised. Fact tables store the transactional records. This separation ensures clean filter propagation across all visuals and slicers.
+Dimension tables act as the filter layer. They are stable, unique, and standardised. Fact tables store the transactional records. This separation ensures clean filter propagation across all visuals and slicers.
 
 **Why Dim_Measure was extracted separately:**
 Measure IDs and Names were repeated across every row in Fact_Complications. Extracting them into a dedicated dimension table eliminates redundancy and demonstrates proper normalisation.
 
 **Why Dim_Condition was created separately from Dim_Measure:**
 The Timely and Effective Care table has a Condition column (6 categories grouping multiple measures) and a Measure ID column. Adding Condition to Dim_Measure would introduce nulls for all Fact_Complications measures which don't have conditions. A separate Dim_Condition keeps both tables clean.
+
+![Data Model](Data%20Model.png)
 
 ---
 
@@ -63,16 +65,16 @@ The Timely and Effective Care table has a Condition column (6 categories groupin
 Facility IDs like "01014F" are identifiers, not numbers. Storing as text prevents leading zero loss (01014 → 1014) which would break all relationships across tables.
 
 **Score and HCAHPS Answer Percent kept as Text:**
-Both columns contain mixed values; numbers alongside "Not Available" text. Converting to numeric before handling the text values causes errors. Both are kept as text and handled in DAX using IFERROR(VALUE(...), BLANK()).
+Both columns contain mixed values: numbers alongside "Not Available" text. Converting to numeric before handling the text values causes errors. Both are kept as text and handled in DAX using IFERROR(VALUE(...), BLANK()).
 
 **EDV (Emergency Department Volume) discovered during cleaning:**
-While cleaning Fact_TimelyCare, the) Score column was found to contain both numeric values and categorical values (High/Medium/Low). Investigation revealed this was specific to one Measure ID (EDV which measures emergency department patient volume as a relative rating rather than an absolute number. This measure is kept as text and visualised separately from numeric measures.
+While cleaning Fact_TimelyCare, the Score column was found to contain both numeric values and categorical values (High/Medium/Low). Investigation revealed this was specific to one Measure ID (EDV), which measures emergency department patient volume as a relative rating rather than an absolute number. This measure is kept as text and visualised separately from numeric measures.
 
 **Date parsing using locale:**
 CMS dates are in MM/DD/YYYY US format. Power Query's default date parsing failed because the environment locale expected DD/MM/YYYY. Resolved using a custom column with Date.FromText([Date Column], [Format="MM/dd/yyyy"]).
 
 **Timely and Effective Care included despite timeline pressure:**
-Initially scoped out to save time, this table was included after reviewing its analytical value, it adds timeliness of care data across 6 condition categories which strengthens Dashboard 1 significantly.
+Initially scoped out to save time, this table was included after reviewing its analytical value. It adds timeliness of care data across 6 condition categories, which strengthens Dashboard 1 significantly.
 
 ---
 
@@ -196,9 +198,11 @@ SWITCH(
 - Amber (#D97706): No Different Than National
 - Red (#DC2626): Worse Than National
 
+![Hospital Quality Dashboard](Hospital%20Quality%20Dashboard.png)
+
 **Key Findings:**
 - Most hospitals cluster at rating 3-4. Very few achieve a 5-star rating.
-- The vast majority of hospitals perform no differently than the national average on clinical outcomes, genuine outliers in either direction are rare.
+- The vast majority of hospitals perform no differently than the national average on clinical outcomes. Genuine outliers in either direction are rare.
 - Mississippi and Puerto Rico consistently show the highest mortality rates across heart attack, heart failure, and pneumonia conditions.
 
 ---
@@ -216,22 +220,24 @@ SWITCH(
 **Key Visuals:**
 - KPI cards: Total Hospitals, Total Rated Hospitals, Avg Experience Rating, Avg Survey Response Rate, Total Surveys Completed
 - Bar chart: Patient satisfaction by care category (color coded by performance threshold)
-- Bar chart: Patient outcome measures, overall rating and recommendation
+- Bar chart: Patient outcome measures (overall rating and recommendation)
 - Bar chart: Highest rated hospitals by patient experience
 - Bar chart: Survey response rate by star rating
 
 **Color Coding Logic for Care Categories:**
-- Red (#DC2626): Average rating below 3.0 — needs immediate improvement
-- Amber (#D97706): Average rating between 3.0 and 3.2 — underperforming
-- Teal (#0891B2): Average rating above 3.2 — performing adequately
+- Red (#DC2626): Average rating below 3.0, needs immediate improvement
+- Amber (#D97706): Average rating between 3.0 and 3.2, underperforming
+- Teal (#0891B2): Average rating above 3.2, performing adequately
 
 Thresholds were set based on the distribution of scores across all 8 categories. The national average sits at 3.29, so anything below 3.0 represents a significant gap.
 
+![Patient Experience Dashboard](Patient%20Experience%20Dashboard.png)
+
 **Key Findings:**
 - Communication about Medicines scores 2.66 out of 5, significantly below all other categories and the only one rated below 3.0 nationally. This is the single largest gap in the US patient experience data.
-- Patients are most likely to recommend their hospital (3.64) even when specific experience aspects score lower, suggesting overall sentiment is driven by clinical outcomes more than operational factors.
+- Patients are most likely to recommend their hospital (3.64) even when specific experience aspects score lower. This suggests overall sentiment is driven by clinical outcomes more than operational factors.
 - Survey response rate correlates positively with satisfaction score. 5-star hospitals have approximately 35% response rates vs 15% for 1-star hospitals. This could reflect either higher patient motivation to share positive experiences, or better patient engagement programs at higher-quality hospitals.
-- The average survey response rate nationally is 22.64%, raising a data quality consideration. Insights are based on roughly 1 in 5 patients responding.
+- The average survey response rate nationally is 22.64%, which raises a data quality consideration. Insights are based on roughly 1 in 5 patients responding.
 
 ---
 
@@ -241,7 +247,7 @@ Thresholds were set based on the distribution of scores across all 8 categories.
 Synthetic healthcare datasets (like the commonly used Prasad Patil Kaggle dataset) have randomly generated values with no real patterns. CMS data contains genuine hospital performance information that can be defended in an interview and compared against publicly available benchmarks.
 
 **Why Recommend Hospital and Overall Hospital Rating were separated from care categories:**
-Nurse communication, doctor communication, cleanliness, and quietness are operational experience measures. Things that happen during the hospital stay that hospitals can directly improve. Recommend Hospital and Overall Hospital Rating are outcome measures. Patient verdicts on the total experience. Mixing them distorts the operational picture.
+Nurse communication, doctor communication, cleanliness, and quietness are operational experience measures. These are things that happen during the hospital stay that hospitals can directly improve. Recommend Hospital and Overall Hospital Rating are outcome measures, representing patient verdicts on the total experience. Mixing them distorts the operational picture.
 
 **Why the Top 10 Hospitals chart ranks by survey volume rather than rating:**
 The H_STAR_RATING column uses a 1-5 whole number scale, creating many tied hospitals at 5 stars. Ranking by maximum survey count within the 4+ star filter selects the hospitals where the 5-star rating has the most statistical evidence behind it. A hospital with 10 responses and a 5-star rating is less meaningful than one with 2,000 responses and the same rating.
@@ -281,4 +287,5 @@ Power BI field parameter tables use composite keys. SELECTEDVALUE on a composite
 
 ## About
 
-Built as part of a data analytics portfolio by Rawan Al-Sir.
+Built as part of a data analytics portfolio by RawanSir.
+GitHub: [RawanSir](https://github.com/RawanSir)
